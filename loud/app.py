@@ -161,7 +161,7 @@ class App:
                    command=lambda: os.startfile(device_pick.CABLE_URL)).grid(sticky="w", pady=(6, 0))
         ttk.Button(devices, text="Rescan devices", command=self._rescan).grid(sticky="w", pady=(0, 8))
         self.exclusive_var = tk.BooleanVar(value=bool(self.settings.get("exclusive", False)))
-        ttk.Checkbutton(devices, text="Bypass Windows and Realtek effects (exclusive mode)",
+        ttk.Checkbutton(devices, text="Bypass Windows and audio-driver effects (exclusive mode)",
                         variable=self.exclusive_var, command=self._on_exclusive).grid(sticky="w")
         self.exclusive_note = ttk.Label(devices, style="Muted.TLabel", wraplength=410, justify="left",
                                         text="Takes over the headphone jack: every other app goes silent on it "
