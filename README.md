@@ -122,6 +122,10 @@ Code layout: `loud/wasapi.py` (audio devices, loopback capture, output), `loud/e
 `loud/dsp.py` (gain and limiter), `loud/devices.py` (device selection), `loud/spotify.py` (detects where Spotify's
 sound is going), `loud/app.py` (window).
 
+## License
+
+[MIT](LICENSE). Free to use, copy, modify and share.
+
 ## Disclaimer
 
 Loud is an independent project. It is not affiliated with or endorsed by Spotify or VB-Audio. It doesn't modify
