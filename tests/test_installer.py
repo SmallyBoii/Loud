@@ -9,9 +9,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 POWERSHELL = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
 
 
-def run_ps(script, *args):
+def run_ps(script, *args, env=None):
     cmd = [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", os.path.join(ROOT, script), *args]
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=env)
 
 
 class ScriptTests(unittest.TestCase):
@@ -56,6 +56,15 @@ class InstallRoundTripTests(unittest.TestCase):
         done = run_ps("uninstall.ps1", "-Yes", "-KeepData", "-NoShortcut", "-NoUninstallEntry", "-InstallDir", self.target)
         self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
         self.assertFalse(os.path.exists(self.target))
+
+    def test_works_with_a_powershell_7_style_module_path(self):
+        # A pwsh window or a CI step hands its own module path down to Windows PowerShell 5.1, which then cannot find Get-FileHash.
+        env = dict(os.environ, PSModulePath=r"C:\Program Files\PowerShell\Modules")
+        done = run_ps("install.ps1", "-Yes", "-NoStart", "-NoShortcut", "-NoUninstallEntry",
+                      "-Source", self.source, "-InstallDir", self.target, env=env)
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        done = run_ps("uninstall.ps1", "-Yes", "-KeepData", "-NoShortcut", "-NoUninstallEntry", "-InstallDir", self.target, env=env)
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
 
     def test_reinstall_over_an_existing_install_works(self):
         self.assertEqual(self.install().returncode, 0)

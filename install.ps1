@@ -29,6 +29,12 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
+# Windows PowerShell 5.1 can inherit a PowerShell 7 module path (from a pwsh window or a CI step) and then cannot load its own
+# modules (Get-FileHash and friends). Use the Windows PowerShell system folder only.
+if ($PSVersionTable.PSEdition -ne 'Core') {
+    $env:PSModulePath = Join-Path ([Environment]::SystemDirectory) 'WindowsPowerShell1.0\Modules'
+}
+
 function Ask([string]$Question, [bool]$Default) {
     if ($Yes) { return $Default }
     $hint = if ($Default) { '[Y/n]' } else { '[y/N]' }
