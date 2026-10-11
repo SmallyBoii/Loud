@@ -10,7 +10,7 @@ import tkinter as tk
 from ctypes import byref, wintypes
 from tkinter import ttk
 
-from . import devices as device_pick, spotify, wasapi
+from . import devices as device_pick, spotify, startup, wasapi
 from .config import DATA_DIR, LOG_PATH, SETTINGS_PATH
 from .dsp import MAX_GAIN_DB, MIN_GAIN_DB
 from .engine import Engine
@@ -168,6 +168,10 @@ class App:
                                              "while Loud runs.")
         self.exclusive_note.grid(sticky="w", pady=(2, 0))
         self._on_exclusive()
+        if startup.available():
+            self.startup_var = tk.BooleanVar(value=startup.is_enabled())
+            ttk.Checkbutton(devices, text="Start Loud when Windows starts", variable=self.startup_var,
+                            command=lambda: startup.set_enabled(self.startup_var.get())).grid(sticky="w", pady=(8, 0))
 
         boost = ttk.Frame(outer, style="Panel.TFrame", padding=14)
         boost.grid(sticky="ew", pady=(0, 10))

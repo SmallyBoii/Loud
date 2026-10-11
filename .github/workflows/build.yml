@@ -1,0 +1,45 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+      - name: Run tests
+        run: python -m unittest discover -s tests
+      - name: Build Loud.exe
+        run: >
+          python -m PyInstaller --noconfirm --onefile --windowed --name Loud --distpath dist
+          --workpath build --specpath build --paths . launch.py
+      - name: Checksum
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash dist/Loud.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  Loud.exe" | Out-File -Encoding ascii dist/Loud.exe.sha256
+          Get-Content dist/Loud.exe.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Loud
+          path: dist/*
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: gh release upload "$GITHUB_REF_NAME" dist/Loud.exe dist/Loud.exe.sha256 --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}

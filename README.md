@@ -47,10 +47,10 @@ Do this once.
    `VBCABLE_Setup_x64.exe` as administrator, then **restart your PC**.
 2. Keep your real speakers or headphones as the Windows default output. Don't make the cable the default.
 3. Make Spotify play to the cable. Either:
-   - in Spotify, **Settings > Playback**, choose **CABLE Input** as the output device (if your version has that
-     setting), or
    - in Windows, **Settings > System > Sound > Volume mixer**, find **Spotify** (it has to be playing) and set its
-     output to **CABLE Input**.
+     output to **CABLE Input** (this works on every version), or
+   - in Spotify, check **Settings > Playback** for an output device option and choose **CABLE Input**. Some
+     versions of Spotify have this setting and some don't.
 4. Open **Loud.exe** and press **Start**.
 
 ### If your PC has two outputs (for example speakers plus a monitor with built-in audio)
@@ -69,6 +69,7 @@ Spotify is silent while it's sent to the silent output and Loud isn't running. T
 - Hotkeys that work from any window:
   - `Ctrl+Alt+PageUp` / `Ctrl+Alt+PageDown`: boost up or down 1 dB
   - `Ctrl+Alt+0`: back to 0 dB
+- Tick **Start Loud when Windows starts** (in the packaged `Loud.exe`) to have it ready at login.
 - After the first Start, Loud starts itself when you open it. Press **Stop** and it won't, until you press Start
   again.
 - The **Output** and **Limiter** bars show how loud the result is and how much the limiter is holding peaks back.
@@ -120,7 +121,7 @@ build.bat                                             # build dist\Loud.exe with
 
 Code layout: `loud/wasapi.py` (audio devices, loopback capture, output), `loud/engine.py` (real-time loop),
 `loud/dsp.py` (gain and limiter), `loud/devices.py` (device selection), `loud/spotify.py` (detects where Spotify's
-sound is going), `loud/app.py` (window).
+sound is going), `loud/startup.py` (optional start with Windows), `loud/app.py` (window).
 
 ## License
 

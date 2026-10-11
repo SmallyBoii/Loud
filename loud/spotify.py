@@ -56,7 +56,7 @@ def advice(state, source_id, output_id, names):
     """(level, message) telling the user whether Spotify will reach Loud. level: ok | warn | info."""
     source, output = names.get(source_id, "Loud's input"), names.get(output_id, "your headphones")
     fix = (f"In Windows Volume mixer, set Spotify's output device to {source} "
-           "(newer Spotify versions also have an Output device setting in Settings > Playback).")
+           "(some Spotify versions also have an Output device setting in Settings > Playback).")
     if not state.running:
         return "info", "Spotify isn't running. Open it and play something."
     if state.playing_on == source_id:
