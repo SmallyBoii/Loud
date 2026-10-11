@@ -219,6 +219,7 @@ class App:
         self.scale = ttk.Scale(boost, from_=MIN_GAIN_DB, to=MAX_GAIN_DB, variable=self.gain_var,
                                command=self._on_gain, length=410)
         self.scale.grid(sticky="ew", pady=(4, 0))
+        self.scale.bind("<Button-1>", self._jump_to_click)
         ttk.Label(boost, text="Ctrl+Alt+PageUp / PageDown: ±1 dB     Ctrl+Alt+0: reset to 0 dB",
                   style="Muted.TLabel").grid(sticky="w", pady=(6, 0))
         self.loud_var = tk.BooleanVar(value=bool(self.settings.get("loud_mode", False)))
@@ -318,6 +319,14 @@ class App:
         self.spotify_msg.configure(text=text, foreground=LEVEL_COLORS[level])
 
     # ---- boost --------------------------------------------------------------------------------
+
+    def _jump_to_click(self, event):
+        """Clicking the bar moves the boost there (ttk only nudges it); dragging the handle works as before."""
+        if self.scale.identify(event.x, event.y) != "trough":
+            return None
+        fraction = min(max(event.x / max(self.scale.winfo_width(), 1), 0.0), 1.0)
+        self._set_gain(MIN_GAIN_DB + fraction * (MAX_GAIN_DB - MIN_GAIN_DB))
+        return "break"
 
     def _on_loud_mode(self):
         if self.engine:
