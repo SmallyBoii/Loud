@@ -93,6 +93,34 @@ class App:
 
     # ---- layout -------------------------------------------------------------------------------
 
+    def _scrollable_body(self):
+        """The window's content frame. If the content is taller than the screen, a scrollbar appears so
+        nothing is out of reach on small or heavily scaled displays."""
+        canvas = tk.Canvas(self.root, bg=BG, highlightthickness=0)
+        bar = ttk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=bar.set)
+        canvas.grid(row=0, column=0, sticky="nsew")
+        body = ttk.Frame(canvas, padding=18)
+        canvas.create_window(0, 0, window=body, anchor="nw")
+
+        def fit(_event=None):
+            self.root.update_idletasks()
+            width, height = body.winfo_reqwidth(), body.winfo_reqheight()
+            room = int(self.root.winfo_screenheight() * 0.85)
+            canvas.configure(width=width, height=min(height, room), scrollregion=(0, 0, width, height))
+            if height > room:
+                bar.grid(row=0, column=1, sticky="ns")
+            else:
+                bar.grid_remove()
+
+        def wheel(event):
+            if bar.winfo_ismapped():
+                canvas.yview_scroll(-1 if event.delta > 0 else 1, "units")
+
+        body.bind("<Configure>", fit)
+        self.root.bind("<MouseWheel>", wheel)
+        return body
+
     def _style(self):
         style = ttk.Style()
         style.theme_use("clam")
@@ -126,12 +154,17 @@ class App:
         self.root.option_add("*TCombobox*Listbox.selectBackground", ACCENT)
 
     def _build(self):
-        outer = ttk.Frame(self.root, padding=18)
-        outer.grid()
-        ttk.Label(outer, text="Loud", style="Title.TLabel").grid(sticky="w")
-        ttk.Label(outer, text="Spotify, louder than Windows' 100%", style="Sub.TLabel").grid(sticky="w", pady=(0, 12))
+        outer = self._scrollable_body()
+        ttk.Label(outer, text="Loud", style="Title.TLabel").grid(row=0, column=0, columnspan=2, sticky="w")
+        ttk.Label(outer, text="Spotify, louder than Windows' 100%", style="Sub.TLabel"
+                  ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 12))
+        # Two columns so the window is wide rather than tall: setup on the left, controls on the right.
+        left = ttk.Frame(outer)
+        left.grid(row=2, column=0, sticky="nsew", padx=(0, 14))
+        right = ttk.Frame(outer)
+        right.grid(row=2, column=1, sticky="nsew")
 
-        sp = ttk.Frame(outer, style="Panel.TFrame", padding=14)
+        sp = ttk.Frame(left, style="Panel.TFrame", padding=14)
         sp.grid(sticky="ew", pady=(0, 10))
         ttk.Label(sp, text="Spotify", style="Head.TLabel").grid(sticky="w")
         self.spotify_msg = ttk.Label(sp, text="Checking...", style="Muted.TLabel", wraplength=410, justify="left")
@@ -139,7 +172,7 @@ class App:
         ttk.Button(sp, text="Open Volume mixer", command=lambda: os.startfile("ms-settings:apps-volume")
                    ).grid(sticky="w", pady=(8, 0))
 
-        devices = ttk.Frame(outer, style="Panel.TFrame", padding=14)
+        devices = ttk.Frame(left, style="Panel.TFrame", padding=14)
         devices.grid(sticky="ew", pady=(0, 10))
         ttk.Label(devices, text="Your headphones or speakers (where the boosted sound plays)",
                   style="Panel.TLabel").grid(sticky="w")
@@ -173,7 +206,7 @@ class App:
             ttk.Checkbutton(devices, text="Start Loud when Windows starts", variable=self.startup_var,
                             command=lambda: startup.set_enabled(self.startup_var.get())).grid(sticky="w", pady=(8, 0))
 
-        boost = ttk.Frame(outer, style="Panel.TFrame", padding=14)
+        boost = ttk.Frame(right, style="Panel.TFrame", padding=14)
         boost.grid(sticky="ew", pady=(0, 10))
         head = ttk.Frame(boost, style="Panel.TFrame")
         head.grid(sticky="ew")
@@ -198,7 +231,7 @@ class App:
                        "quality is reduced."
                   ).grid(sticky="w", pady=(2, 0))
 
-        meters = ttk.Frame(outer, style="Panel.TFrame", padding=14)
+        meters = ttk.Frame(left, style="Panel.TFrame", padding=14)
         meters.grid(sticky="ew", pady=(0, 10))
         meters.columnconfigure(1, weight=1)
         self.m_in, self.m_out, self.m_red = Meter(meters, GOOD), Meter(meters, ACCENT), Meter(meters, WARN)
@@ -206,27 +239,27 @@ class App:
             ttk.Label(meters, text=label, style="Muted.TLabel", width=8).grid(row=row, column=0, sticky="w", pady=3)
             meter.grid(row=row, column=1, sticky="ew", pady=3)
 
-        self.button = ttk.Button(outer, text="Start", style="Go.TButton", command=self._toggle)
+        self.button = ttk.Button(right, text="Start", style="Go.TButton", command=self._toggle)
         self.button.grid(sticky="ew", pady=(0, 8))
 
-        self.status = ttk.Label(outer, text="", wraplength=430, justify="left", style="Sub.TLabel")
+        self.status = ttk.Label(right, text="", wraplength=430, justify="left", style="Sub.TLabel")
         self.status.grid(sticky="w")
-        vol = ttk.Frame(outer)
+        vol = ttk.Frame(right)
         vol.grid(sticky="ew", pady=(4, 0))
         self.win_volume = ttk.Label(vol, text="", style="Sub.TLabel")
         self.win_volume.grid(row=0, column=0, sticky="w")
         self.max_btn = ttk.Button(vol, text="Set Windows volume to 100%", command=self._max_windows_volume)
         self.max_btn.grid(row=0, column=1, padx=(8, 0))
         self.max_btn.grid_remove()
-        ttk.Label(outer, style="Sub.TLabel", wraplength=430, justify="left",
+        ttk.Label(right, style="Sub.TLabel", wraplength=430, justify="left",
                   text="Tip: in Spotify > Settings > Audio quality, turn off audio normalization (or set the "
                        "volume level to Loud). Otherwise Spotify turns loud songs down before Loud boosts them."
                   ).grid(sticky="w", pady=(10, 0))
-        ttk.Label(outer, style="Sub.TLabel", wraplength=430, justify="left",
+        ttk.Label(right, style="Sub.TLabel", wraplength=430, justify="left",
                   text="Spotify is silent while it's routed to Loud's input and Loud isn't running. To undo, set "
                        "Spotify's output back to Default in Volume mixer."
                   ).grid(sticky="w", pady=(6, 0))
-        ttk.Label(outer, text="Very loud sound can damage hearing and headphones. Raise the boost slowly.",
+        ttk.Label(right, text="Very loud sound can damage hearing and headphones. Raise the boost slowly.",
                   style="Sub.TLabel", wraplength=430).grid(sticky="w", pady=(6, 0))
         self._on_gain(0.0)
 
