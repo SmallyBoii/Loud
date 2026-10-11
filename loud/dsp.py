@@ -70,6 +70,12 @@ class Limiter:
         return out, float(g.min())
 
 
+def soft_clip(block):
+    """Rounds off peaks instead of keeping them. This is what 'loud mode' adds: it makes the sound denser and
+    louder once the limiter has nothing left to give, at the cost of audible distortion."""
+    return np.tanh(block)
+
+
 class GainStage:
     """Smoothed gain with a slow fade-in after start, so nothing ever jumps to full level."""
 

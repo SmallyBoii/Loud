@@ -6,7 +6,13 @@ Spotify too quiet on your laptop, even with every volume slider maxed? Loud boos
 and keeps the sound clean with a limiter. Games, Discord, your browser and every other app keep playing at their
 normal volume on the same speakers or headphones.
 
+> **Please read:** how much louder it gets depends on your music. Speakers and headphones have a maximum level,
+> and many songs already reach it with the Windows volume at 100%. In clean mode Loud can't go past that without
+> distortion, so on already-loud songs you may notice little difference beyond about +6 dB. Quiet or dynamic songs
+> gain more. **Loud mode** (below) gets more volume, at the cost of sound quality.
+
 - Boost Spotify up to +24 dB, with a look-ahead limiter so peaks don't clip
+- Optional **Loud mode** for more volume, with reduced sound quality
 - Other apps are untouched and play alongside it
 - Global hotkeys to change the boost from any window
 - One small file, no installer, nothing runs in the background after you close it
@@ -35,7 +41,8 @@ Loud:   gain (up to +24 dB) -> look-ahead limiter (-0.3 dBFS) -> your speakers/h
 Other apps --------------------------------------------------> your speakers/headphones
 ```
 
-The limiter holds peaks just under full scale, so extra boost raises the average loudness instead of clipping.
+The limiter holds peaks just under full scale so the sound doesn't clip. That also means the boost has a ceiling:
+once the loudest parts of a song reach it, raising the boost further changes little.
 
 ## Set up
 
@@ -73,6 +80,20 @@ Spotify is silent while it's sent to the silent output and Loud isn't running. T
 - After the first Start, Loud starts itself when you open it. Press **Stop** and it won't, until you press Start
   again.
 - The **Output** and **Limiter** bars show how loud the result is and how much the limiter is holding peaks back.
+  If the Limiter bar is nearly full, you've hit the ceiling and more boost won't help in clean mode.
+
+## Clean mode vs Loud mode
+
+| | Clean mode (default) | Loud mode |
+|---|---|---|
+| What it does | Boosts, then limits peaks so they never clip | Also rounds off peaks (soft saturation) before the limiter |
+| Quality | Undistorted | **Reduced.** Adds distortion that gets worse as you raise the boost |
+| Loudness | Stops growing once peaks hit the maximum level. On already-loud songs you may notice little change beyond about +6 dB; quieter songs gain up to roughly +9 dB | Keeps getting louder as you raise the boost, because peaks are squashed. In our tests on test signals, up to about 9 to 12 dB more on loud songs |
+
+Loud mode is a trade: more volume in exchange for a flatter, more distorted sound. It's off by default. Turn it on
+with the **Loud mode** checkbox, and keep the boost moderate (roughly +12 dB or less) if you care how it sounds.
+Those loudness figures come from synthetic test signals, not from real songs on every setup, so your results will
+vary.
 
 ## Tips
 
@@ -80,8 +101,8 @@ Spotify is silent while it's sent to the silent output and Loud isn't running. T
   Otherwise Spotify turns loud songs down before Loud can boost them.
 - Leave Spotify's **Exclusive Mode** off. It takes over the audio device and blocks Loud from hearing it.
 - Keep the Windows volume on your speakers or headphones at 100%. Loud shows a button to set it if it's lower.
-- Headphones can't play louder than the hardware's full-scale output. Past that point, Loud raises the average
-  level by compressing peaks, so very high boost sounds denser.
+- Headphones can't play louder than the hardware's full-scale output. In clean mode Loud stops there. If you want
+  more, turn on Loud mode and accept the lower sound quality.
 - If the volume drifts back down after a moment, tick **Bypass Windows and audio-driver effects (exclusive mode)**.
   That skips all Windows sound effects (Equalizer APO, Realtek and similar), but every other app is silent on those
   speakers while Loud runs.
@@ -101,7 +122,7 @@ speakers in Spotify's own output setting).
 | Spotify panel is orange | Spotify is playing somewhere else. Follow the fix it shows. Spotify must be playing for it to appear in the Volume mixer. |
 | "Only one audio output found" | Install VB-Cable (see above), restart, then press **Rescan devices**. |
 | "Stopped: the audio device went away" | The device Loud was listening on disappeared (monitor off, cable removed). Turn it back on and press Start. |
-| Boost seems to do nothing | Turn off Spotify's audio normalization, and make sure Windows volume on your speakers is 100%. |
+| Boost seems to do nothing, or stops getting louder | Normal on already-loud songs: you've hit the speakers' maximum level (see the Limiter bar). Turn off Spotify's audio normalization, make sure Windows volume on your speakers is 100%, or try Loud mode. |
 
 Errors are written to `%APPDATA%\Loud\loud.log`. Running `python -m loud.probe` lists your playback devices, what
 each supports, and which apps are using them. It plays nothing.
@@ -120,7 +141,7 @@ build.bat                                             # build dist\Loud.exe with
 ```
 
 Code layout: `loud/wasapi.py` (audio devices, loopback capture, output), `loud/engine.py` (real-time loop),
-`loud/dsp.py` (gain and limiter), `loud/devices.py` (device selection), `loud/spotify.py` (detects where Spotify's
+`loud/dsp.py` (gain, soft clip and limiter), `loud/devices.py` (device selection), `loud/spotify.py` (detects where Spotify's
 sound is going), `loud/startup.py` (optional start with Windows), `loud/app.py` (window).
 
 ## License

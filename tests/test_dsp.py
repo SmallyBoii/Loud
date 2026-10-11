@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from loud.dsp import GainStage, Limiter, db_to_lin
+from loud.dsp import GainStage, Limiter, db_to_lin, soft_clip
 
 RATE = 48000
 
@@ -75,6 +75,22 @@ class GainStageTests(unittest.TestCase):
         for _ in range(10):
             out = stage.process(np.ones((480, 2), dtype=np.float32), 100.0)
         self.assertAlmostEqual(float(out[-1, 0]), db_to_lin(24.0), places=2)
+
+
+class SoftClipTests(unittest.TestCase):
+    def test_leaves_quiet_audio_almost_unchanged(self):
+        quiet = tone(0.1, 0.01)
+        np.testing.assert_allclose(soft_clip(quiet), quiet, atol=1e-5)
+
+    def test_never_exceeds_full_scale_even_with_huge_input(self):
+        self.assertLessEqual(np.abs(soft_clip(tone(0.1, 50.0))).max(), 1.0)
+
+    def test_makes_a_driven_signal_denser_than_peak_limiting_alone(self):
+        driven = tone(1.0, 4.0)
+        limited = Limiter(RATE).process(driven)[0]
+        clipped = Limiter(RATE).process(soft_clip(driven))[0]
+        rms = lambda x: float(np.sqrt(np.mean(x[RATE // 2:] ** 2)))
+        self.assertGreater(rms(clipped), rms(limited))
 
 
 if __name__ == "__main__":

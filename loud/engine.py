@@ -10,7 +10,7 @@ import numpy as np
 
 from . import wasapi
 from .config import LOG_PATH
-from .dsp import GainStage, Limiter, lin_to_db
+from .dsp import GainStage, Limiter, lin_to_db, soft_clip
 
 log = logging.getLogger("loud")
 
@@ -88,12 +88,13 @@ class Engine:
     """`exclusive=False` plays into the normal Windows mixer (other apps keep working);
     `exclusive=True` takes the output over and bypasses Windows effects."""
 
-    def __init__(self, source_id, output_id, exclusive=False, open_devices=None):
+    def __init__(self, source_id, output_id, exclusive=False, open_devices=None, loud_mode=False):
         self.source_id = source_id
         self.output_id = output_id
         self.exclusive = exclusive
         self._open_devices = open_devices or (lambda src, out: _open_wasapi(src, out, exclusive))
         self.gain_db = 0.0
+        self.loud_mode = loud_mode     # soft saturation before the limiter: louder, but audibly distorted
         self.meters = Meters()
         self.error = None
         self.info = ""
@@ -180,6 +181,8 @@ class Engine:
                 continue
 
             block = gain.process(block, self.gain_db, mute=fade_out_until is not None)
+            if self.loud_mode:
+                block = soft_clip(block)
             block, lowest = limiter.process(block)
             render.write(block)
             self.meters.out_peak = max(self.meters.out_peak, float(np.abs(block).max()))

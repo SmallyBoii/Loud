@@ -84,8 +84,8 @@ class FakeRender:
         self.closed = True
 
 
-def run_engine(capture, render, gain_db, seconds):
-    engine = Engine("src", "out", open_devices=lambda s, o: (capture, render))
+def run_engine(capture, render, gain_db, seconds, loud_mode=False):
+    engine = Engine("src", "out", open_devices=lambda s, o: (capture, render), loud_mode=loud_mode)
     engine.gain_db = gain_db
     engine.start()
     time.sleep(seconds)
@@ -123,6 +123,18 @@ class EngineTests(unittest.TestCase):
         run_engine(cap, ren, gain_db=12.0, seconds=1.5)
         out = np.concatenate(ren.written)
         self.assertLess(np.abs(out[-RATE // 100:]).max(), 0.05)  # ends near silence, no click
+
+    def test_loud_mode_is_denser_than_the_clean_limiter_but_never_clips(self):
+        def measure(loud):
+            render = FakeRender()
+            run_engine(FakeCapture(amp=0.3), render, 24.0, 2.0, loud_mode=loud)
+            out = np.concatenate(render.written)
+            return float(np.sqrt(np.mean(out[RATE:] ** 2))), float(np.abs(out).max())
+
+        clean_rms, _ = measure(False)
+        loud_rms, loud_peak = measure(True)
+        self.assertGreater(loud_rms, clean_rms)
+        self.assertLessEqual(loud_peak, db_to_lin(-0.3) + 1e-6)
 
     def test_open_failure_is_reported(self):
         def boom(s, o):

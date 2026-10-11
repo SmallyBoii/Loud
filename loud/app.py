@@ -188,6 +188,15 @@ class App:
         self.scale.grid(sticky="ew", pady=(4, 0))
         ttk.Label(boost, text="Ctrl+Alt+PageUp / PageDown: ±1 dB     Ctrl+Alt+0: reset to 0 dB",
                   style="Muted.TLabel").grid(sticky="w", pady=(6, 0))
+        self.loud_var = tk.BooleanVar(value=bool(self.settings.get("loud_mode", False)))
+        ttk.Checkbutton(boost, text="Loud mode (louder, but lower sound quality)", variable=self.loud_var,
+                        command=self._on_loud_mode).grid(sticky="w", pady=(10, 0))
+        ttk.Label(boost, style="Muted.TLabel", wraplength=410, justify="left",
+                  text="Off (clean): sound stays undistorted, but your speakers' maximum level limits it, so on "
+                       "already-loud songs you may notice little change beyond about +6 dB. On: rounds off peaks "
+                       "to get a louder result. This adds distortion that gets worse as you raise the boost, so "
+                       "quality is reduced."
+                  ).grid(sticky="w", pady=(2, 0))
 
         meters = ttk.Frame(outer, style="Panel.TFrame", padding=14)
         meters.grid(sticky="ew", pady=(0, 10))
@@ -277,6 +286,11 @@ class App:
 
     # ---- boost --------------------------------------------------------------------------------
 
+    def _on_loud_mode(self):
+        if self.engine:
+            self.engine.loud_mode = self.loud_var.get()
+        self._remember(autostart=self.settings.get("autostart", False))
+
     def _on_gain(self, value):
         db = round(float(value) * 2) / 2
         if self.engine:
@@ -307,7 +321,7 @@ class App:
         if not src_id or not out_id or src_id == out_id:
             self._set_status("Loud needs a second, silent audio device to listen on. See the notice above.", BAD)
             return
-        engine = Engine(src_id, out_id, exclusive=self.exclusive_var.get())
+        engine = Engine(src_id, out_id, exclusive=self.exclusive_var.get(), loud_mode=self.loud_var.get())
         engine.gain_db = round(self.gain_var.get() * 2) / 2
         try:
             engine.start()
@@ -337,8 +351,9 @@ class App:
     def _remember(self, autostart):
         src_id, _ = self._selected(self.source)
         out_id, _ = self._selected(self.output)
-        save_settings({"source": src_id, "output": out_id, "exclusive": self.exclusive_var.get(),
-                       "autostart": autostart})
+        self.settings = {"source": src_id, "output": out_id, "exclusive": self.exclusive_var.get(),
+                         "loud_mode": self.loud_var.get(), "autostart": autostart}
+        save_settings(self.settings)
 
     def _set_status(self, text, color):
         self.status.configure(text=text, foreground=color)
